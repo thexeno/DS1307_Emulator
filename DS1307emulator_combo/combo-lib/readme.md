@@ -2,7 +2,7 @@
 
 ### This library is fully portable on more MCUs thanks to the user defined HAL files available 
 
-It is released under MIT licence, inside LICENSE file in https://github.com/thexeno/Firmwares
+It is released under MIT licence, see LICENSE file.
 
 This library is absolutely non-blocking with the eventually present user code, that can exist simultaneously. This means that interrupt capabilities must be supported on the used MCU. And all MCUs have this capability.
 

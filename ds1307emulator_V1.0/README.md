@@ -1,7 +1,7 @@
 #DS1307 emulator - V 1.0
 
 This code emulates the commercial DS1307 chip. Is it not fully compatible, for more info and usage see the page https://enricosanino.wordpress.com/2015/03/06/ds1307-real-time-clock-hacking/ where are described the various connections.
-It is released under MIT licence, inside LICENSE file in https://github.com/thexeno/Firmwares
+It is released under MIT licence, see LICENSE file.
 
 #Compilation
 
