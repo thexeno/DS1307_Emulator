@@ -113,6 +113,7 @@ _DS1307_GLOBAL_DATA_T rtcData;
 void (*DS1307emulator::HalCb_setDefaultPin)() = DS1307emulator::halcbDefaultUnused;
 void (*DS1307emulator::HalCb_resetPinDigitalMode)() = DS1307emulator::halcbDefaultUnused;
 void (*DS1307emulator::HalCb_setPinDigitalMode)() = DS1307emulator::halcbDefaultUnused;
+void (*DS1307emulator::HalCb_setPinDigitalValue)(uint8_t value) = DS1307emulator::halcbDefaultUnused;
 
 
 //PRIVATE
@@ -588,8 +589,8 @@ static void DS1307emulator::rtcHal_init(void)
 	   If not available, you should use the higher resolution timer with the lower prescaler value */
 	/* With Arduno board, 16MHz and prescaler 256 with 16bit Timer1, introduces error of 16ppm over the 16MHz osc ppm error */
 	
-        pinMode(13,OUTPUT);
-	digitalWrite(13, HIGH);
+  //pinMode(13,OUTPUT);
+	//digitalWrite(13, HIGH);
 	
 	rtcHal_setRtcTick(); // metti quello che c'è sopra qui dentro
 	rtcHal_setDefaultPin();
@@ -605,13 +606,14 @@ static void DS1307emulator::rtcHal_setRtcTick(void)
 static void DS1307emulator::rtcHal_RtcTick(void)
 {
 	rtcProtocol_tickIncrementISR();
-	digitalWrite(13, digitalRead(13) ^ 1);
+	//digitalWrite(13, digitalRead(13) ^ 1);
 }
 
 static void DS1307emulator::rtcHal_setDefaultPin(void)
 {
 	//setPinMode(PORT_C, 1, PIN_OUTPUT, PULLUP_DISABLED);
 	//setPinValue(PORT_C, 1, 0);
+	HalCb_setDefaultPin() ;
 }
 
 static void DS1307emulator::rtcHal_resetRtcTick(void)
@@ -633,16 +635,19 @@ static void DS1307emulator::rtcHal_stopRtcTick(void)
 static void DS1307emulator::rtcHal_resetPinDigitalMode(void)
 {
 	//setPinMode(PORT_C, 1, PIN_INPUT, PULLUP_DISABLED);
+	HalCb_resetPinDigitalMode() ;
 }
 
 static void DS1307emulator::rtcHal_setPinDigitalMode(void)
 {
 	//setPinMode(PORT_C, 1, PIN_OUTPUT, PULLUP_DISABLED);
+	HalCb_setPinDigitalMode();
 }
 
 static void DS1307emulator::rtcHal_setPinDigitalValue(uint8_t value)
 {
 	//setPinValue(PORT_C, 1, value);
+	HalCb_setPinDigitalValue(value);
 }
 
 //utility
@@ -664,6 +669,26 @@ static unsigned char DS1307emulator::decToBcd(unsigned char data)
 
 void DS1307emulator::halcbDefaultUnused()
 {
+}
+
+void DS1307emulator::attachsetDefaultPin(void (*cbf)())
+{
+  HalCb_setDefaultPin = cbf;
+}
+
+void DS1307emulator::attachresetPinDigitalMode(void (*cbf)())
+{
+  HalCb_resetPinDigitalMode = cbf;
+}
+
+void DS1307emulator::attachssetPinDigitalMode(void (*cbf)())
+{
+  HalCb_setPinDigitalMode = cbf;
+}
+
+void DS1307emulator::attachsetPinDigitalValue(void (*cbf)())
+{
+  HalCb_setPinDigitalValue = cbf;
 }
 
 ///interface

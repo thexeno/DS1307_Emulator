@@ -64,6 +64,12 @@ class DS1307emulator{
       static void (*HalCb_setDefaultPin)();
       static void (*HalCb_resetPinDigitalMode)();
       static void (*HalCb_setPinDigitalMode)();
+      static void (*HalCb_setPinDigitalValue)(uint8_t value);
+      
+      void attachsetDefaultPin(void (*cbf)());
+      void attachresetPinDigitalMode(void (*cbf)());
+      void attachssetPinDigitalMode(void (*cbf)());
+      void attachsetPinDigitalValue(void (*cbf)());
 
 };
 

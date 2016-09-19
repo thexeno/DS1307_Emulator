@@ -2,13 +2,20 @@
 
 DS1307emulator RTCEmu;
 
+const byte DS1307_Address = 0x68;
 byte seconds = 45, oldseconds = 0, minutes = 52, hours = 23, date = 8, month = 12, day = 4, year = 11, protect = 0; // defaults just to start somewhere.
 byte NEWseconds = 45, NEWminutes = 52, NEWhours = 23, NEWdate = 8, NEWmonth = 12, NEWday = 4, NEWyear = 11 ; // These are for setting.
 
 
 void setup() {
 
+  RTCEmu.attachsetDefaultPin(setpinmode);
+  RTCEmu.attachresetPinDigitalMode(setpinmode);
+  RTCEmu.attachssetPinDigitalMode(setpinmode);
+  RTCEmu.attachsetPinDigitalValue(setpinvalue);
+  RTCsetSqwPinMode();
   RTCEmu.start();
+  Wire.begin(DS1307_Address)
   inittest();
 
 }
@@ -18,6 +25,13 @@ void loop() {
   rtcloop();
 }
 
+void setpinvalue(uint8_t value){
+  digitalWrite(13, value);
+}
+
+void setpinmode(){
+  pinMode(13, OUTPUT);
+}
 
 void inittest() {
   Serial.begin(9600);
@@ -31,6 +45,13 @@ void rtcloop() {
   RTCprintTime(); // sends time to serial.
   delay(1000);
 } // End main loop
+
+void RTCsetSqwPinMode(){
+  RTCEmu.freezeUserData();
+  RTCEmu.writeToRTC(0x07);
+  RTCEmu.writeToRTC(0x10);
+  RTCEmu.setUserData();
+}
 
 // Read time from RTC into time variables.
 void RTCread() {
