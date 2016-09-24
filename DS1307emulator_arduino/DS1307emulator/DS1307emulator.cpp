@@ -142,7 +142,7 @@ void DS1307emulator::rtcProtocol_init(void)
 	
 }
 
-static void DS1307emulator::rtcProtocol_freezeUserData(void)
+void DS1307emulator::rtcProtocol_freezeUserData(void)
 {
 	/* Save all time dependant data, as stated in DS1307 */
 	rtcDataBuffered.second = decToBcd(rtcData.second);
@@ -157,7 +157,7 @@ static void DS1307emulator::rtcProtocol_freezeUserData(void)
 	rtcData.dataByte = 0;
 }
 
-static uint8_t DS1307emulator::rtcProtocol_writeToRTC(unsigned char data){
+uint8_t DS1307emulator::rtcProtocol_writeToRTC(unsigned char data){
 	
 	uint8_t noWrite = 1;
 	
@@ -235,7 +235,7 @@ static uint8_t DS1307emulator::rtcProtocol_writeToRTC(unsigned char data){
 	return 0;
 }
 
-static void DS1307emulator::rtcProtocol_setUserData(void)
+void DS1307emulator::rtcProtocol_setUserData(void)
 {
 	if (rtcData.noSet == 1)
 	{
@@ -299,14 +299,14 @@ static void DS1307emulator::rtcProtocol_setUserData(void)
 	}
 }
 
-static uint8_t DS1307emulator::rtcProtocol_readUserData(void)
+uint8_t DS1307emulator::rtcProtocol_readUserData(void)
 {
 	uint8_t data = 0;
 	rtcProtocol_getFromRTC(&data);
 	return (data);
 }
 
-static uint8_t DS1307emulator::rtcProtocol_leapCalc(uint8_t year)
+uint8_t DS1307emulator::rtcProtocol_leapCalc(uint8_t year)
 {
 	uint8_t ret = 1;
 	if ((year % 100) == 0)
@@ -323,24 +323,24 @@ static uint8_t DS1307emulator::rtcProtocol_leapCalc(uint8_t year)
 	return ret;
 }
 
-static void DS1307emulator::rtcProtocol_putYear(uint8_t data)
+void DS1307emulator::rtcProtocol_putYear(uint8_t data)
 {
 	rtcDataBuffered.year = (data & RTC_PROTOCOL_YEAR_MASK);
 }
 
-static void DS1307emulator::rtcProtocol_putMonth(uint8_t data)
+void DS1307emulator::rtcProtocol_putMonth(uint8_t data)
 {
 	rtcDataBuffered.month = (data & RTC_PROTOCOL_MONTH_MASK);
 }
-static void DS1307emulator::rtcProtocol_putMday(uint8_t data)
+void DS1307emulator::rtcProtocol_putMday(uint8_t data)
 {
 	rtcDataBuffered.Mday = (data & RTC_PROTOCOL_MDAY_MASK);
 }
-static void DS1307emulator::rtcProtocol_putWday(uint8_t data)
+void DS1307emulator::rtcProtocol_putWday(uint8_t data)
 {
 	rtcDataBuffered.Wday = (data & RTC_PROTOCOL_WDAY_MASK);
 }
-static void DS1307emulator::rtcProtocol_putHour(uint8_t data)
+void DS1307emulator::rtcProtocol_putHour(uint8_t data)
 {
 	rtcDataBuffered.hourFormat = (data & RTC_PROTOCOL_HOUR_FORMAT_MASK);
 	if (rtcDataBuffered.hourFormat == RTC_PROTOCOL_MILITARY_FORMAT_MODE)
@@ -353,21 +353,21 @@ static void DS1307emulator::rtcProtocol_putHour(uint8_t data)
 	}
 	rtcDataBuffered.am_Pm = (data & RTC_PROTOCOL_AM_PM_MASK);
 }
-static void DS1307emulator::rtcProtocol_putMinute(uint8_t data)
+void DS1307emulator::rtcProtocol_putMinute(uint8_t data)
 {
 	rtcDataBuffered.minute = (data & RTC_PROTOCOL_MINUTE_MASK);
 }
-static void DS1307emulator::rtcProtocol_putSecond(uint8_t data)
+void DS1307emulator::rtcProtocol_putSecond(uint8_t data)
 {
 	rtcDataBuffered.second = (data & RTC_PROTOCOL_SECOND_MASK);
 	rtcData.clockHalt = data & RTC_PROTOCOL_CH_MASK;
 }
-static void DS1307emulator::rtcProtocol_putNvRam(uint8_t data, uint8_t w_addr)
+void DS1307emulator::rtcProtocol_putNvRam(uint8_t data, uint8_t w_addr)
 {
 	/* Not buffered */
 	rtcData.NvRam[w_addr] = data;
 }
-static void DS1307emulator::rtcProtocol_putControlHandler(uint8_t data)
+void DS1307emulator::rtcProtocol_putControlHandler(uint8_t data)
 {
 	// Control Register from datasheet
 	rtcData.sqwOutPinMode = data & RTC_PROTOCOL_SQWE_MASK;//RTC_PROTOCOL_OUT_DIGITAL_MODE, RTC_PROTOCOL_OUT_SQUAREW_MODE
@@ -377,31 +377,31 @@ static void DS1307emulator::rtcProtocol_putControlHandler(uint8_t data)
 
 /* Read RTC data from structure */
 
-static void DS1307emulator::rtcProtocol_getControlHandler(uint8_t* val)
+void DS1307emulator::rtcProtocol_getControlHandler(uint8_t* val)
 {
 	uint8_t data = 0;
 	data = (rtcData.sqwOutPinMode | rtcData.sqwOutPinFreq | rtcData.sqwOutPinValue);
 	*val = data;
 }
 
-static void DS1307emulator::rtcProtocol_getYear(uint8_t* data)
+void DS1307emulator::rtcProtocol_getYear(uint8_t* data)
 {
 	*data = (rtcDataBuffered.year & RTC_PROTOCOL_YEAR_MASK);
 }
 
-static void DS1307emulator::rtcProtocol_getMonth(uint8_t *data)
+void DS1307emulator::rtcProtocol_getMonth(uint8_t *data)
 {
 	*data = (rtcDataBuffered.month & RTC_PROTOCOL_MONTH_MASK);
 }
-static void DS1307emulator::rtcProtocol_getMday(uint8_t *data)
+void DS1307emulator::rtcProtocol_getMday(uint8_t *data)
 {
 	*data = (rtcDataBuffered.Mday & RTC_PROTOCOL_MDAY_MASK);
 }
-static void DS1307emulator::rtcProtocol_getWday(uint8_t *data)
+void DS1307emulator::rtcProtocol_getWday(uint8_t *data)
 {
 	*data = (rtcDataBuffered.Wday & RTC_PROTOCOL_WDAY_MASK);
 }
-static void DS1307emulator::rtcProtocol_getHour(uint8_t *data)
+void DS1307emulator::rtcProtocol_getHour(uint8_t *data)
 {
 	if (rtcDataBuffered.hourFormat == RTC_PROTOCOL_MILITARY_FORMAT_MODE)
 	{
@@ -414,17 +414,17 @@ static void DS1307emulator::rtcProtocol_getHour(uint8_t *data)
 	}
 	*data |=  rtcDataBuffered.hourFormat;
 }
-static void DS1307emulator::rtcProtocol_getMinute(uint8_t *data)
+void DS1307emulator::rtcProtocol_getMinute(uint8_t *data)
 {
 	*data = (rtcDataBuffered.minute & RTC_PROTOCOL_MINUTE_MASK);
 }
-static void DS1307emulator::rtcProtocol_getSecond(uint8_t *data)
+void DS1307emulator::rtcProtocol_getSecond(uint8_t *data)
 {
 	*data = (rtcDataBuffered.second & RTC_PROTOCOL_SECOND_MASK);
     *data |=(rtcData.clockHalt);
 }
 
-static void DS1307emulator::rtcProtocol_getNvRam(uint8_t *data, uint8_t w_addr)
+void DS1307emulator::rtcProtocol_getNvRam(uint8_t *data, uint8_t w_addr)
 {
 	*data = rtcData.NvRam[w_addr];
 }
@@ -487,7 +487,7 @@ uint8_t DS1307emulator::rtcProtocol_getFromRTC(unsigned char *data)
 }
 
 /* API Chiamata da ISR timer */
-static void DS1307emulator::rtcProtocol_tickIncrementISR(void)
+void DS1307emulator::rtcProtocol_tickIncrementISR(void)
 {
 	uint8_t tickIncrement_hourIncr = 0;
 	/* Counting made 0-24h, retieved converted upon approrpiate setting (mil or american format) */
@@ -583,7 +583,7 @@ static void DS1307emulator::rtcProtocol_tickIncrementISR(void)
 
 
 //HAL
-static void DS1307emulator::rtcHal_init(void)
+void DS1307emulator::rtcHal_init(void)
 {
 	/* For better accuracy, use a timer that allow to use a 32768Hz crystal.
 	   If not available, you should use the higher resolution timer with the lower prescaler value */
@@ -597,61 +597,61 @@ static void DS1307emulator::rtcHal_init(void)
 	
 }
 
-static void DS1307emulator::rtcHal_setRtcTick(void)
+void DS1307emulator::rtcHal_setRtcTick(void)
 {
         Timer1.initialize(500000);
         Timer1.attachInterrupt(rtcHal_RtcTick); 
 }
 
-static void DS1307emulator::rtcHal_RtcTick(void)
+void DS1307emulator::rtcHal_RtcTick(void)
 {
 	rtcProtocol_tickIncrementISR();
 	//digitalWrite(13, digitalRead(13) ^ 1);
 }
 
-static void DS1307emulator::rtcHal_setDefaultPin(void)
+void DS1307emulator::rtcHal_setDefaultPin(void)
 {
 	//setPinMode(PORT_C, 1, PIN_OUTPUT, PULLUP_DISABLED);
 	//setPinValue(PORT_C, 1, 0);
 	HalCb_setDefaultPin() ;
 }
 
-static void DS1307emulator::rtcHal_resetRtcTick(void)
+void DS1307emulator::rtcHal_resetRtcTick(void)
 {
 	Timer1.restart();
 }
 
-static void DS1307emulator::rtcHal_startRtcTick(void)
+void DS1307emulator::rtcHal_startRtcTick(void)
 {
 	//Timer1.start();
 	Timer1.resume();
 }
 
-static void DS1307emulator::rtcHal_stopRtcTick(void)
+void DS1307emulator::rtcHal_stopRtcTick(void)
 {
 	Timer1.stop();  
 }
 
-static void DS1307emulator::rtcHal_resetPinDigitalMode(void)
+void DS1307emulator::rtcHal_resetPinDigitalMode(void)
 {
 	//setPinMode(PORT_C, 1, PIN_INPUT, PULLUP_DISABLED);
 	HalCb_resetPinDigitalMode() ;
 }
 
-static void DS1307emulator::rtcHal_setPinDigitalMode(void)
+void DS1307emulator::rtcHal_setPinDigitalMode(void)
 {
 	//setPinMode(PORT_C, 1, PIN_OUTPUT, PULLUP_DISABLED);
 	HalCb_setPinDigitalMode();
 }
 
-static void DS1307emulator::rtcHal_setPinDigitalValue(uint8_t value)
+void DS1307emulator::rtcHal_setPinDigitalValue(uint8_t value)
 {
 	//setPinValue(PORT_C, 1, value);
 	HalCb_setPinDigitalValue(value);
 }
 
 //utility
-static unsigned char DS1307emulator::bcdToDec(unsigned char data)
+unsigned char DS1307emulator::bcdToDec(unsigned char data)
 {
 	unsigned char temp = 0;
 	temp = data >> 4;
@@ -659,7 +659,7 @@ static unsigned char DS1307emulator::bcdToDec(unsigned char data)
 	return (temp + (data & 0x0F));
 }
 
-static unsigned char DS1307emulator::decToBcd(unsigned char data)
+unsigned char DS1307emulator::decToBcd(unsigned char data)
 {
 	char temp = 0;
 	temp = data/10;
@@ -668,6 +668,10 @@ static unsigned char DS1307emulator::decToBcd(unsigned char data)
 }
 
 void DS1307emulator::halcbDefaultUnused()
+{
+}
+
+void DS1307emulator::halcbDefaultUnused(uint8_t value)
 {
 }
 
@@ -681,12 +685,12 @@ void DS1307emulator::attachresetPinDigitalMode(void (*cbf)())
   HalCb_resetPinDigitalMode = cbf;
 }
 
-void DS1307emulator::attachssetPinDigitalMode(void (*cbf)())
+void DS1307emulator::attachsetPinDigitalMode(void (*cbf)())
 {
   HalCb_setPinDigitalMode = cbf;
 }
 
-void DS1307emulator::attachsetPinDigitalValue(void (*cbf)())
+void DS1307emulator::attachsetPinDigitalValue(void (*cbf)(uint8_t value))
 {
   HalCb_setPinDigitalValue = cbf;
 }

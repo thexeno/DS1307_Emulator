@@ -60,6 +60,7 @@ class DS1307emulator{
       static uint8_t rtcProtocol_getFromRTC(unsigned char *data);
 
       static void halcbDefaultUnused();
+      static void halcbDefaultUnused(uint8_t value);
 
       static void (*HalCb_setDefaultPin)();
       static void (*HalCb_resetPinDigitalMode)();
@@ -68,8 +69,8 @@ class DS1307emulator{
       
       void attachsetDefaultPin(void (*cbf)());
       void attachresetPinDigitalMode(void (*cbf)());
-      void attachssetPinDigitalMode(void (*cbf)());
-      void attachsetPinDigitalValue(void (*cbf)());
+      void attachsetPinDigitalMode(void (*cbf)());
+      void attachsetPinDigitalValue(void (*cbf)(uint8_t value));
 
 };
 

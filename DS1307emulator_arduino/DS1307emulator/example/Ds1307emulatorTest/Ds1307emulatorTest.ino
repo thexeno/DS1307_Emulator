@@ -1,4 +1,6 @@
+#include <Wire.h>
 #include <DS1307emulator.h>
+
 
 DS1307emulator RTCEmu;
 
@@ -11,11 +13,11 @@ void setup() {
 
   RTCEmu.attachsetDefaultPin(setpinmode);
   RTCEmu.attachresetPinDigitalMode(setpinmode);
-  RTCEmu.attachssetPinDigitalMode(setpinmode);
+  RTCEmu.attachsetPinDigitalMode(setpinmode);
   RTCEmu.attachsetPinDigitalValue(setpinvalue);
   RTCsetSqwPinMode();
   RTCEmu.start();
-  Wire.begin(DS1307_Address)
+  Wire.begin(DS1307_Address);
   inittest();
 
 }
