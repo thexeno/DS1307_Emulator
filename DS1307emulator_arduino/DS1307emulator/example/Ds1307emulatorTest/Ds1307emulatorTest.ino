@@ -15,9 +15,11 @@ void setup() {
   RTCEmu.attachresetPinDigitalMode(setpinmode);
   RTCEmu.attachsetPinDigitalMode(setpinmode);
   RTCEmu.attachsetPinDigitalValue(setpinvalue);
-  RTCsetSqwPinMode();
   RTCEmu.start();
+  RTCsetSqwPinMode();
   Wire.begin(DS1307_Address);
+  Wire.onRequest(requestEvent);
+  Wire.onReceive(receiveEvent);
   inittest();
 
 }
@@ -25,6 +27,18 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   rtcloop();
+}
+
+void requestEvent(){
+  Wire.send(registerMap, REG_MAP_SIZE);  //Set the buffer up to send all 14 bytes of data
+}
+ 
+void receiveEvent(int bytesReceived){
+  while (Wire.available()){
+    RTCEmu.freezeUserData();
+    RTCEmu.writeToRTC(Wire.receive());
+    RTCEmu.setUserData();
+  }
 }
 
 void setpinvalue(uint8_t value){
