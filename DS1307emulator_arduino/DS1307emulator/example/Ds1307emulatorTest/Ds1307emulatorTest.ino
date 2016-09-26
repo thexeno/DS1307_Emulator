@@ -30,13 +30,21 @@ void loop() {
 }
 
 void requestEvent(){
-  Wire.send(registerMap, REG_MAP_SIZE);  //Set the buffer up to send all 14 bytes of data
+  uint8_t i2cbuffer[BUFFER_LENGTH];
+  uint8_t arrayptr;
+
+  RTCEmu.freezeUserData();
+  for (arrayptr = 0; arrayptr < BUFFER_LENGTH; arrayptr++){
+    i2cbuffer[arrayptr] = RTCEmu.readUserData();
+  }
+  RTCEmu.setUserData();
+  Wire.write(i2cbuffer, BUFFER_LENGTH);
 }
  
 void receiveEvent(int bytesReceived){
   while (Wire.available()){
     RTCEmu.freezeUserData();
-    RTCEmu.writeToRTC(Wire.receive());
+    RTCEmu.writeToRTC(Wire.read());
     RTCEmu.setUserData();
   }
 }
