@@ -42,11 +42,11 @@ void requestEvent(){
 }
  
 void receiveEvent(int bytesReceived){
+  RTCEmu.freezeUserData();
   while (Wire.available()){
-    RTCEmu.freezeUserData();
     RTCEmu.writeToRTC(Wire.read());
-    RTCEmu.setUserData();
   }
+  RTCEmu.setUserData();
 }
 
 void setpinvalue(uint8_t value){
