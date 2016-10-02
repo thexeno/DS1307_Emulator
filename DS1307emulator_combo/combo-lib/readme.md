@@ -92,7 +92,7 @@ Write RTC data safely by issuing APIs in this order:
 1.    rtcProtocol_freezeUserData();
 2.    rtcProtocol_writeUserData(address);
 3.    rtcProtocol_writeUserData(data);
-4.    recall point 4 as many times is needed to write all the required RTC bytes
+4.    recall point 3 as many times is needed to write all the required RTC bytes
 5.    rtcProtocol_setUserData();
 
 While in an independent way the **rtcProtocol_tickIncrementISR()** shall be called every 500ms.
