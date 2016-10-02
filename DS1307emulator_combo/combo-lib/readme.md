@@ -14,7 +14,7 @@ This library is absolutely non-blocking with the eventually present user code, t
 
 The host MCU shall contain/support at least:
 
--  Data Memory: 180 Bytes of RAM
+-  Data Memory: 160 Bytes of RAM
 -  Program Memory: 2kB of Flash/EEPROM
 -  Oscillator: one external crystal
 -  3 GPIO (one RTC output pin, two I2C pins)
