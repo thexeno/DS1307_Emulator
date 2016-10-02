@@ -1,6 +1,12 @@
-##RTC Emulator V1.1 - DS1307 emulation
+##RTC Emulator V1.2 - DS1307 emulation
 
-### This library is fully portable on more MCUs thanks to the user defined HAL files available 
+### This library is fully portable on more MCUs thanks to the user defined HAL files available. If needed, open an Issue.
+
+Main changes from the V1.1:
+
+- More efficient RAM usage
+- Data handling memory improved of NVRAM
+- I2C library upgrade
 
 It is released under MIT licence, see LICENSE file.
 
