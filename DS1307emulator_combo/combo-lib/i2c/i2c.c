@@ -29,16 +29,18 @@ typedef struct
 	uint8_t toWrite;
 } I2C_DATA;
 
-static void i2c_sendNack(void);
+//static void i2c_sendNack(void);
 static void i2c_baudSelector(uint16_t speed);
 static uint8_t i2c_read(void);
 static void i2c_write(uint8_t data);
 static void i2c_sendStart(void);
-static void i2c_sendReStartReq(void);
-static void i2c_sendStopReq(void);
+//static void i2c_sendReStartReq(void);
+//static void i2c_sendStopReq(void);
 static void i2c_clearInt(void);
 //static uint8_t dataLogByte[288];
-//static uint8_t cnt1 = 0;static uint8_t dataLogBytew[288];static uint8_t cnt2 = 0;
+//static uint8_t cnt1 = 0;
+//static uint8_t dataLogBytew[288];
+//static uint8_t cnt2 = 0;
 I2C_DATA i2cData;
 
 /* --------------------------------------------- Private functions --------------------------------------- */
@@ -60,9 +62,7 @@ static void i2c_baudSelector(uint16_t speed)
 
 static uint8_t i2c_read(void)
 {
-	uint8_t data;
-	data = TWDR;
-	return (data);
+	return (TWDR);
 }
 
 static void i2c_write(uint8_t data)
@@ -70,33 +70,14 @@ static void i2c_write(uint8_t data)
 	TWDR = data;
 }
 
-static void i2c_sendReStartReq(void)
-{
-	i2cData.reStartReq = 1;
-}
-
 
 static void i2c_sendStart(void)
 {
-
 	i2c_clearInt();
 	TWCR = 0b11100101;
-	//TWCR |= (1<<TWEA);	// prepare to ack if receiving
-	//TWCR &= ~(1<<TWSTO);
-	//TWCR |= (1<<TWSTA);
-
 }
 
-static void i2c_sendStopReq(void)
-{
-	i2cData.stopReq = 1;
-	
-}
 
-static void i2c_sendNack(void)
-{
-	i2cData.sendNack = 1;
-}
 
 //static void i2c_dataTransferMode(void)
 //{
@@ -184,16 +165,24 @@ uint8_t i2c_byteHandler_ISR(void)
 	uint8_t state;
 	i2cData.status = TWSR;
 	state = (i2cData.status & I2C_STATUS_MASK);
+	
+	/* Bad sync with the Linux RTC driver. Issues bad start/stop conditions, filtered with this delay. */
 
 	switch (state)
 	{
 		case I2C_MASTER_START_STATE:
+#if I2C_SLAVE_ONLY
+		i2cData.stopReq = 1;
+#else
 		/** Write/read mode */	
 		i2c_write(i2cData.slaveAdx);
+#endif
 		break;
 		
 		case I2C_MASTER_RESTART_STATE:
-
+#if I2C_SLAVE_ONLY
+		i2cData.stopReq = 1;
+#else
 		if (i2cData.mode == I2C_MASTER_RECEIVE_SEND_MODE)
 		{
 			/* Now we are in send */
@@ -215,8 +204,9 @@ uint8_t i2c_byteHandler_ISR(void)
 		else
 		{
 			/*Errore */
-			i2c_sendStopReq();
+			i2cData.stopReq = 1;
 		}
+#endif
 		break;
 		
 		case I2C_SLAVE_RX_ADX_STATE:
@@ -225,7 +215,7 @@ uint8_t i2c_byteHandler_ISR(void)
 		if ((i2cData.index+1) >= i2cData.buffLenRx)
 		{
 			/* Send NACK after next byte */
-			i2c_sendNack();
+			i2cData.sendNack = 1;
 		}
 #endif
 		rtcProtocol_freezeUserData();
@@ -233,24 +223,12 @@ uint8_t i2c_byteHandler_ISR(void)
 		
 		case I2C_SLAVE_RX_DATA_ACK_TX_STATE:
 		/* Normal condition: always here during this state */
-		//if (i2cData.toRead)
-		//{
-			//i2c_sendNack();
-		//}
-		//else
-		//{
-			//i2cData.bufferRx[i2cData.index++] = i2c_read();	
-			rtcProtocol_writeToRTC(i2c_read());
-			//dataLogBytew[cnt2] = i2c_read();
-			//rtcProtocol_writeToRTC(dataLogBytew[cnt2]);
-			//cnt2++;
-			//i2cData.toRead = 1;
-		//}
+		rtcProtocol_writeToRTC(i2c_read());
 #if I2C_SLAVE_LEN_LIMITED
 		if ((i2cData.index+1) >= i2cData.buffLenRx)
 		{
 			/* Send NACK after next byte */
-			i2c_sendNack();
+			i2cData.sendNack = 1;
 		}
 #else
 		if ((i2cData.index+1) >= I2C_BUFF_LEN)
@@ -262,6 +240,7 @@ uint8_t i2c_byteHandler_ISR(void)
 		
 		case I2C_SLAVE_RX_DATA_NACK_TX_STATE:
 		/* next: I2C_SLAVE_STOP_RESTART_STATE */
+		rtcProtocol_setUserData();
 		break;
 		
 		case I2C_SLAVE_STOP_RESTART_STATE:
@@ -269,17 +248,19 @@ uint8_t i2c_byteHandler_ISR(void)
 		i2cData.buffLenRx = i2cData.index;
 		i2cData.index = 0;
 		i2cData.sendNack = 0;
-		//i2cData.toRead = 1;
 		rtcProtocol_setUserData();
 		break;
 		
 		case I2C_SLAVE_TX_ADX_STATE:
 		i2cData.busy = 1;
+		rtcProtocol_freezeUserData();
+		i2c_write(rtcProtocol_readUserData());
+
 #if I2C_SLAVE_LEN_LIMITED
 		if ((i2cData.index+1) >= i2cData.buffLenTx)
 		{
 			/* Send NACK after next byte, means the last byte inthis state is transmitted */
-			i2c_sendNack();
+			i2cData.sendNack = 1;
 		}
 #else
 		if ((i2cData.index+1) >= I2C_BUFF_LEN)
@@ -287,21 +268,15 @@ uint8_t i2c_byteHandler_ISR(void)
 			i2cData.index = 0;
 		}
 #endif
-		//i2c_write(i2cData.bufferTx[i2cData.index++]);
-		rtcProtocol_freezeUserData();
-		i2c_write(rtcProtocol_readUserData());
-		//dataLogByte[cnt1] = rtcProtocol_readUserData();
-		//i2c_write(dataLogByte[cnt1]);
-		//cnt1++;
-		
 		break;
 		
 		case I2C_SLAVE_TX_DATA_ACK_RX_STATE:
+		i2c_write(rtcProtocol_readUserData());
 #if I2C_SLAVE_LEN_LIMITED
 		if ((i2cData.index+1) >= i2cData.buffLenTx)
 		{
 			/* Send NACK after next byte, means the last byte in this state is transmitted */
-			i2c_sendNack();
+			i2cData.sendNack = 1;
 		}
 #else
 		if ((i2cData.index+1) >= I2C_BUFF_LEN)
@@ -309,11 +284,6 @@ uint8_t i2c_byteHandler_ISR(void)
 			i2cData.index = 0;
 		}
 #endif
-		//i2c_write(rtcProtocol_readUserData());
-		i2c_write(rtcProtocol_readUserData());
-		//dataLogByte[cnt1] = rtcProtocol_readUserData();
-		//i2c_write(dataLogByte[cnt1]);
-		//cnt1++;
 		break;
 		
 		case I2C_SLAVE_END_TX_DATA_ACK_RX_STATE:
@@ -322,7 +292,6 @@ uint8_t i2c_byteHandler_ISR(void)
 		/* this case covers the slave intention of not transmit enymore */
 		i2cData.sendNack = 0;
 		i2cData.busy = 0;
-		i2cData.toWrite = 0;
 		i2cData.index = 0;
 		break;
 		
@@ -330,62 +299,76 @@ uint8_t i2c_byteHandler_ISR(void)
 		/* No more transfers. reactivate adx recognition */
 		i2cData.sendNack = 0;
 		i2cData.busy = 0;
-		i2cData.toWrite = 0;
 		i2cData.index = 0;
+		rtcProtocol_setUserData();
 		break;
 		
 		case I2C_MASTER_TX_ADX_ACK_NOT_RECEIVED_STATE:
-		i2c_sendStopReq();
+		i2cData.stopReq = 1;
 		break;
 		
 		case I2C_MASTER_TX_ADX_ACK_RECEIVED_STATE:
+#if I2C_SLAVE_ONLY
+		i2cData.stopReq = 1;	
+#else 
 		if (i2cData.index >= i2cData.buffLenTx)
 		{
 			if (i2cData.mode == I2C_MASTER_SEND_RECEIVE_MODE)
 			{
-				i2c_sendReStartReq();
+				i2cData.reStartReq = 1;
 			}
 			else
 			{
-				i2c_sendStopReq();	
+				i2cData.stopReq = 1;
 			}
 		}
 		else
 		{
 			/** Index should be 0 here */
 			i2c_write(i2cData.bufferTx[i2cData.index++]);
-		}		
+		}
+#endif
 		break;
 		
 		case I2C_MASTER_RX_ADX_ACK_RECEIVED_STATE:
+#if I2C_SLAVE_ONLY
+		i2cData.stopReq = 1;
+#else
 		/* wait for next data */
 		if ((i2cData.index+1) >= i2cData.buffLenRx)
 		{
 			/*Last byte: Send NACK after next byte */
-			i2c_sendNack();
+			i2cData.sendNack = 1;
 		}
+#endif
 		break;
 		
 		case I2C_MASTER_RX_ADX_ACK_NOT_RECEIVED_STATE:
-		i2c_sendStopReq();
+		i2cData.stopReq = 1;
 		break;
 		
 		case I2C_MASTER_END_RX_DATA_STATE:
+#if I2C_SLAVE_ONLY
+		i2cData.stopReq = 1;
+#else
 		/* last byte */
 		i2cData.bufferRx[i2cData.index] = i2c_read();
 		/* NACK was sent, now send stop or restart */
 		if (i2cData.mode == I2C_MASTER_RECEIVE_SEND_MODE)
 		{
-			i2c_sendReStartReq();
+			i2cData.reStartReq = 1;
 		}
 		else
 		{
-			i2c_sendStopReq();	
+			i2cData.stopReq = 1;
 		}
-		//i2cData.toRead = 1;
+#endif
 		break;
 		
 		case I2C_MASTER_RX_DATA_STATE:
+#if I2C_SLAVE_ONLY
+		i2cData.stopReq = 1;
+#else
 		if (i2cData.index >= i2cData.buffLenRx)
 		{
 			/* Error condition: we must never be in this condition because the last byte will be sent in I2C_END_RX_DATA */
@@ -393,7 +376,7 @@ uint8_t i2c_byteHandler_ISR(void)
 			{
 				i2cData.bufferRx[i2cData.index++] = i2c_read();	
 			}
-			i2c_sendStopReq();	
+			i2cData.stopReq = 1;	
 		}
 		else
 		{
@@ -402,40 +385,47 @@ uint8_t i2c_byteHandler_ISR(void)
 			if ((i2cData.index+1) >= i2cData.buffLenRx)
 			{
 				/* Send NACK after next byte */
-				i2c_sendNack();
+				i2cData.sendNack = 1;
 			}
 			
 		}
+#endif
 		break;
 		
 		case I2C_MASTER_TX_ACK_RECEIVED_STATE:
+#if I2C_SLAVE_ONLY
+		i2cData.stopReq = 1;
+#else
 		if (i2cData.index >= i2cData.buffLenTx)
 		{
 			if (i2cData.mode == I2C_MASTER_SEND_RECEIVE_MODE)
 			{
-				i2c_sendReStartReq();
+				i2cData.reStartReq = 1;
 			}
 			else
 			{
-				i2c_sendStopReq();	
+				i2cData.stopReq = 1;
 			}
 		}
 		else
 		{
 			i2c_write(i2cData.bufferTx[i2cData.index++]);	
 		}
+#endif
 		break;
 		
 		case I2C_MASTER_TX_ACK_NOT_RECEIVED_STATE:
-		i2c_sendStopReq();
+		i2cData.stopReq = 1;
 		break;
 		
 		default:
-		i2c_sendStopReq();
+		i2cData.stopReq = 1;
 		setPinValue(PORT_B, 5, 1);
 		break;
 	}
+	//dataLogByte[cnt1++] = state;
 	i2c_clearInt();
+
 	return state;
 }
 

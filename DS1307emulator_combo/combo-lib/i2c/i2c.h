@@ -9,8 +9,9 @@
 #ifndef I2C_H_
 #define I2C_H_
 
-#define I2C_BUFF_LEN 16
+#define I2C_BUFF_LEN 1
 #define I2C_SLAVE_LEN_LIMITED 0
+#define I2C_SLAVE_ONLY 1
 #define I2C_WRITE_BIT 0x00
 #define I2C_READ_BIT 0x01
 
