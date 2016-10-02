@@ -63,6 +63,7 @@ void rtcHal_resetRtcTick(void)
 
 void rtcHal_startRtcTick(void)
 {
+//	rtcHal_resetRtcTick(); // riparto allineato
 	startTimer1();
 }
 

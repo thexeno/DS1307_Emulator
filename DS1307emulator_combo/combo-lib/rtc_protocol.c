@@ -23,6 +23,8 @@
 
 
 #include "rtc_protocol.h"
+#include "string.h"
+#include "avr/interrupt.h"
 
 /*DS RTC defines*/
 #define SEC 0x00
@@ -38,7 +40,7 @@
 #define RTC_PROTOCOL_BUFFER_SIZE 7
 
 #define MAX_RTC_ONLY_ADDRESS CONTROL_ADDRESS
-#define MAX_RTC_TOTAL_ADDR 0x3F
+#define MAX_RTC_TOTAL_ADDR 0x40
 
 /* Digital/swq selection */
 #define RTC_PROTOCOL_SQWE_MASK 0x10
@@ -90,6 +92,8 @@
 /* year */
 #define RTC_PROTOCOL_YEAR_MASK 0xFF
 
+
+
 /*Private */
 struct userRtcBuffer {
 	uint8_t second;
@@ -103,7 +107,17 @@ struct userRtcBuffer {
 	uint8_t hourFormat;
 } rtcDataBuffered;
 
+_DS1307_GLOBAL_DATA_T rtcData;
 
+static const uint8_t nvRamReset[] = {
+	0x09, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04
+};
 
 static uint8_t rtcProtocol_getFromRTC(unsigned char *data);
 
@@ -169,47 +183,117 @@ static uint8_t rtcProtocol_leapCalc(uint8_t year)
 
 static void rtcProtocol_putYear(uint8_t data)
 {
-	rtcDataBuffered.year = (data & RTC_PROTOCOL_YEAR_MASK);
+	uint8_t temp = 0;
+	temp = bcdToDec(data);
+	if (temp > 99)
+	{
+		rtcDataBuffered.year = (0x99 & RTC_PROTOCOL_YEAR_MASK);
+	}
+	else
+	{
+		rtcDataBuffered.year = (data & RTC_PROTOCOL_YEAR_MASK);	
+	}
+	
 }
 
 static void rtcProtocol_putMonth(uint8_t data)
 {
-	rtcDataBuffered.month = (data & RTC_PROTOCOL_MONTH_MASK);
+	uint8_t temp = 0;
+	temp = bcdToDec(data);
+	if (temp > 12 || temp == 0)
+	{
+		rtcDataBuffered.month = (0x01 & RTC_PROTOCOL_MONTH_MASK);
+	}
+	else
+	{
+		rtcDataBuffered.month = (data & RTC_PROTOCOL_MONTH_MASK);	
+	}
 }
+
 static void rtcProtocol_putMday(uint8_t data)
 {
-	rtcDataBuffered.Mday = (data & RTC_PROTOCOL_MDAY_MASK);
+	uint8_t temp = 0;
+	temp = bcdToDec(data);
+	if (temp > 31 || temp == 0)
+	{
+		rtcDataBuffered.Mday = (0x01 & RTC_PROTOCOL_MDAY_MASK);
+	}
+	else
+	{
+		rtcDataBuffered.Mday = (data & RTC_PROTOCOL_MDAY_MASK);
+	}
 }
+
 static void rtcProtocol_putWday(uint8_t data)
 {
-	rtcDataBuffered.Wday = (data & RTC_PROTOCOL_WDAY_MASK);
+	uint8_t temp = 0;
+	temp = bcdToDec(data);
+	if (temp > 7 || temp == 0)
+	{
+		rtcDataBuffered.Wday = (0x01 & RTC_PROTOCOL_WDAY_MASK);
+	}
+	else
+	{
+		rtcDataBuffered.Wday = (data & RTC_PROTOCOL_WDAY_MASK);
+	}
 }
+
 static void rtcProtocol_putHour(uint8_t data)
 {
+	uint8_t temp = 0;
+	
 	rtcDataBuffered.hourFormat = (data & RTC_PROTOCOL_HOUR_FORMAT_MASK);
 	if (rtcDataBuffered.hourFormat == RTC_PROTOCOL_MILITARY_FORMAT_MODE)
 	{
 		rtcDataBuffered.hour = (data & RTC_PROTOCOL_HOUR_MIL_MASK);	
+		temp = bcdToDec(rtcDataBuffered.hour);
+		if (temp > 23)
+		{
+			rtcDataBuffered.hour = (/*0x00*/ 0x01 & RTC_PROTOCOL_HOUR_MIL_MASK);	
+		}
 	}
 	else
-	{
+	{	
 		rtcDataBuffered.hour = (data & RTC_PROTOCOL_HOUR_MASK);	
+		temp = bcdToDec(rtcDataBuffered.hour);
+		if (temp > 12 || temp == 0)
+		{
+			rtcDataBuffered.hour = (0x01 & RTC_PROTOCOL_HOUR_MASK);	
+		}
 	}
 	rtcDataBuffered.am_Pm = (data & RTC_PROTOCOL_AM_PM_MASK);
 }
+
 static void rtcProtocol_putMinute(uint8_t data)
 {
-	rtcDataBuffered.minute = (data & RTC_PROTOCOL_MINUTE_MASK);
+	uint8_t temp = 0;
+	temp = bcdToDec(data);
+	if (temp > 59)
+	{
+		rtcDataBuffered.minute = (0x00 & RTC_PROTOCOL_MINUTE_MASK);
+	}
+	else
+	{
+		rtcDataBuffered.minute = (data & RTC_PROTOCOL_MINUTE_MASK);
+	}
 }
+
 static void rtcProtocol_putSecond(uint8_t data)
 {
+	int8_t temp = 0;
 	rtcDataBuffered.second = (data & RTC_PROTOCOL_SECOND_MASK);
 	rtcData.clockHalt = data & RTC_PROTOCOL_CH_MASK;
+	temp = bcdToDec(rtcDataBuffered.second);
+	if (temp > 59)
+	{
+		rtcDataBuffered.second = (0x00 & RTC_PROTOCOL_SECOND_MASK);
+	}
+	
 }
 static void rtcProtocol_putNvRam(uint8_t data, uint8_t w_addr)
 {
 	/* Not buffered */
-	rtcData.NvRam[w_addr] = data;
+	rtcData.NvRam[w_addr-8] = data;
 }
 static void rtcProtocol_putControlHandler(uint8_t data)
 {
@@ -271,7 +355,7 @@ static void rtcProtocol_getSecond(uint8_t *data)
 
 static void rtcProtocol_getNvRam(uint8_t *data, uint8_t w_addr)
 {
-	*data = rtcData.NvRam[w_addr];
+	*data = rtcData.NvRam[w_addr-8];
 }
 
 
@@ -279,66 +363,72 @@ static void rtcProtocol_getNvRam(uint8_t *data, uint8_t w_addr)
 
 void rtcProtocol_setUserData(void)
 {
+			
 	if (rtcData.noSet == 1)
 	{
-		return;
-	}
-	/* always work in decimal */
-	rtcHal_stopRtcTick();
-	rtcData.second = bcdToDec(rtcDataBuffered.second);
-	rtcData.minute = bcdToDec(rtcDataBuffered.minute);
-	rtcData.hour = 	 bcdToDec(rtcDataBuffered.hour);
-	rtcData.Wday = 	 bcdToDec(rtcDataBuffered.Wday);
-	rtcData.Mday = 	 bcdToDec(rtcDataBuffered.Mday);
-	rtcData.month =	 bcdToDec(rtcDataBuffered.month);
-	rtcData.year = 	 bcdToDec(rtcDataBuffered.year);
-
-	rtcData.am_Pm = rtcDataBuffered.am_Pm;
-	
-	rtcData.notLeap = rtcProtocol_leapCalc(rtcData.year);
-	/* just to be in order, since there are no mask values for leap */
-	if (rtcData.notLeap && rtcData.month == 2 && rtcData.Mday == 29)
-	{
-		rtcData.Mday = 28;
-	}
-	
-	rtcData.dataSync = 0;
-	rtcData.halfTick = 0;
-	/* Set other settings */
-	/* Update out pin RTC */
-	if (rtcData.sqwOutPinMode == RTC_PROTOCOL_OUT_DIGITAL_MODE)
-	{
-		rtcHal_setPinDigitalMode();
-		rtcHal_setPinDigitalValue(!!rtcData.sqwOutPinValue);
-	}
-	else if (rtcData.sqwOutPinMode == RTC_PROTOCOL_OUT_SQUAREW_MODE)
-	{
-		/* Ignores the digital data */
-		if (rtcData.sqwOutPinFreq == RTC_PROTOCOL_SET_1HZ_MODE)	
-		{
-			rtcHal_setPinDigitalMode();
-			/* Digital changed in ISR */
-		}
-		else
-		{
-			rtcHal_resetPinDigitalMode();
-			/* And use fast waveform */	
-		}
+		/* do nothing */
 	}
 	else
 	{
-		rtcHal_setPinDigitalMode();	
-		rtcHal_setPinDigitalValue(0);
+		/* always work in decimal */
+		rtcHal_stopRtcTick();
+
+		rtcData.second = bcdToDec(rtcDataBuffered.second);
+		rtcData.minute = bcdToDec(rtcDataBuffered.minute);
+		rtcData.hour = 	 bcdToDec(rtcDataBuffered.hour);
+		rtcData.Wday = 	 bcdToDec(rtcDataBuffered.Wday);
+		rtcData.Mday = 	 bcdToDec(rtcDataBuffered.Mday);
+		rtcData.month =	 bcdToDec(rtcDataBuffered.month);
+		rtcData.year = 	 bcdToDec(rtcDataBuffered.year);
+
+		rtcData.am_Pm = rtcDataBuffered.am_Pm;
+	
+		rtcData.notLeap = rtcProtocol_leapCalc(rtcData.year);
+		/* just to be in order, since there are no mask values for leap */
+		if (rtcData.notLeap && rtcData.month == 2 && rtcData.Mday == 29)
+		{
+			rtcData.Mday = 28;
+		}
+	
+		//rtcData.dataSync = 0;
+		rtcData.halfTick = 0;
+		/* Set other settings */
+		/* Update out pin RTC */
+		if (rtcData.sqwOutPinMode == RTC_PROTOCOL_OUT_DIGITAL_MODE)
+		{
+			rtcHal_setPinDigitalMode();
+			rtcHal_setPinDigitalValue(!!rtcData.sqwOutPinValue);
+		}
+		else if (rtcData.sqwOutPinMode == RTC_PROTOCOL_OUT_SQUAREW_MODE)
+		{
+			/* Ignores the digital data */
+			if (rtcData.sqwOutPinFreq == RTC_PROTOCOL_SET_1HZ_MODE)	
+			{
+				rtcHal_setPinDigitalMode();
+				/* Digital changed in ISR */
+			}
+			else
+			{
+				rtcHal_resetPinDigitalMode();
+				/* And use fast waveform */	
+			}
+		}
+		else
+		{
+			rtcHal_setPinDigitalMode();	
+			rtcHal_setPinDigitalValue(0);
+		}
+
+		if (rtcData.clockHalt == RTC_PROTOCOL_CH_MODE)
+		{
+			rtcHal_stopRtcTick(); 
+		}
+		else if (rtcData.clockHalt == RTC_PROTOCOL_NCH_MODE)
+		{
+			rtcHal_startRtcTick(); 	
+		}
 	}
 
-	if (rtcData.clockHalt == RTC_PROTOCOL_CH_MODE)
-	{
-		rtcHal_stopRtcTick(); 
-	}
-	else if (rtcData.clockHalt == RTC_PROTOCOL_NCH_MODE)
-	{
-		rtcHal_startRtcTick(); 	
-	}
 }
 
 uint8_t rtcProtocol_readUserData(void)
@@ -359,18 +449,20 @@ void rtcProtocol_init(void)
 	rtcData.month = 1;
 	rtcData.year = 0;
 	rtcData.ptr = 0;
-	rtcData.dataSync = 0;
 	rtcData.halfTick = 0;
+	memcpy(rtcData.NvRam, nvRamReset, sizeof(rtcData.NvRam));
 	rtcData.notLeap = rtcProtocol_leapCalc(rtcData.year);
-	rtcData.noSet = 0;
+	rtcData.noSet = 1;
 	rtcData.am_Pm = RTC_PROTOCOL_AM_MODE;
-	rtcData.sqwOutPinFreq = RTC_PROTOCOL_SET_32768HZ_MODE;
+	rtcData.sqwOutPinFreq = RTC_PROTOCOL_SET_1HZ_MODE;
 	rtcData.sqwOutPinMode = RTC_PROTOCOL_OUT_DIGITAL_MODE;
 	rtcData.sqwOutPinValue = RTC_PROTOCOL_OUTVAL_LOW;
 	rtcData.dataByte = 0; /* first byte rx will be adx */
 	rtcData.clockHalt = RTC_PROTOCOL_CH_MODE;
 	rtcData.hourFormat = RTC_PROTOCOL_MILITARY_FORMAT_MODE;
-	
+	rtcData.isrSync = 1;
+	rtcProtocol_freezeUserData();
+	rtcProtocol_setUserData();
 }
 
 
@@ -380,6 +472,11 @@ void rtcProtocol_tickIncrementISR(void)
 	uint8_t tickIncrement_hourIncr = 0;
 	/* Counting made 0-24h, retieved converted upon approrpiate setting (mil or american format) */
 	/* Also the BCD format will be converted only upon request in rtcProtocol API*/
+	
+	
+	//sei();
+	rtcData.isrSync = 0;
+	
 	if (rtcData.halfTick)
 	{
 		rtcData.halfTick = 0;	
@@ -394,6 +491,7 @@ void rtcProtocol_tickIncrementISR(void)
 		/* Primary tick -> execute handler */
 		if ((++rtcData.second)==60)
 		{
+			rtcProtocol_freezeUserData();
 			rtcData.second = 0;
 			if ((++rtcData.minute) == 60)
 			{
@@ -467,16 +565,13 @@ void rtcProtocol_tickIncrementISR(void)
 			rtcHal_setPinDigitalValue(0);
 		}
 	}
+	rtcData.isrSync = 1;
 }
 
 
 uint8_t rtcProtocol_getFromRTC(unsigned char *data)
 {
 	
-	if (!rtcData.dataSync)
-	{
-		return 1;
-	}
 	
 	switch (rtcData.ptr){
 		case SEC: //seconds
@@ -515,7 +610,7 @@ uint8_t rtcProtocol_getFromRTC(unsigned char *data)
 		break;
 	}
 
-	if (rtcData.ptr >= MAX_RTC_TOTAL_ADDR)
+	if (rtcData.ptr >= MAX_RTC_TOTAL_ADDR-1)
 	{
 		rtcData.ptr = 0;
 	}
@@ -537,7 +632,6 @@ void rtcProtocol_freezeUserData(void)
 	rtcDataBuffered.month = decToBcd(rtcData.month);
 	rtcDataBuffered.year = decToBcd(rtcData.year);
 	rtcDataBuffered.am_Pm = rtcData.am_Pm;
-	rtcData.dataSync = 1;
 	rtcData.dataByte = 0;
 }
 
@@ -545,11 +639,6 @@ uint8_t rtcProtocol_writeToRTC(unsigned char data){
 	
 	uint8_t noWrite = 1;
 	
-	if (!rtcData.dataSync)
-	{
-		return 1;
-	}
-
 	if (rtcData.dataByte == 0)
 	{
 		rtcData.ptr = data;

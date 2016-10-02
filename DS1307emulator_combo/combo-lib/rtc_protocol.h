@@ -42,7 +42,6 @@ typedef struct {
 	uint8_t month;
 	uint8_t year;
 	uint8_t NvRam[56];
-	
 	uint8_t ptr;
 
 	uint8_t clockHaltReq;
@@ -64,9 +63,11 @@ typedef struct {
 	
 	uint8_t noSet;
 	
+	uint8_t isrSync;
+	
 } _DS1307_GLOBAL_DATA_T;
 
-_DS1307_GLOBAL_DATA_T rtcData;
+
 
 void rtcProtocol_tickIncrementISR(void);
 uint8_t rtcProtocol_readUserData(void);
