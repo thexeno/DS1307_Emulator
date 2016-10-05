@@ -5,6 +5,9 @@ All is shared on the MIT License (follows LICENSE file in each folder).
 
 For more info, visit http://enricosanino.wordpress.com
 
+###Arduino Library
+Contains the same setup adapted to be compiled in the Arduino environment. See README in that folder.
+
 ###Combo library
 The combo contains all the supporting libraries in order to use the Emulator. These shall be included in an Atmel Studio project or similar.
 
