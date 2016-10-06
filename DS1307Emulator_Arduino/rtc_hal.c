@@ -46,9 +46,7 @@ ISR(TWI_vect)
 
 void rtcHal_init(void)
 {
-	/* For better accuracy, use a timer that allow to use a 32768Hz crystal.
-	   If not available, you should use the higher resolution timer with the lower prescaler value */
-	/* With Arduno board, 16MHz and prescaler 256 with 16bit Timer1, introduces error of 16ppm over the 16MHz osc ppm error */
+	
 	
 	rtcHal_setRtcTick();
 	rtcHal_setDefaultPin();
