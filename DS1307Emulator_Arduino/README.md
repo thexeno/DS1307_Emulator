@@ -17,7 +17,7 @@ Are provided mainly 6 user functions:
 -   **rtcProtocol_writeUserData(unsigned char byte)** -> write one byte in the RTC
 -   **unsigned char data = rtcProtocol_readUserData()** -> return one byte to data
 -   **rtcProtocol_setUserData()** -> need to be called in order to apply RTC the data adjustment
--   **rtcProtocol_tickIncrementISR()** -> Every HALF SECOND, this call will increment the internal RTC tick
+-   **rtcProtocol_tickIncrementISR()** -> Every HALF SECOND, this call is issued automatically and will increment the internal RTC tick
 
 Follows an example on using it.
 
