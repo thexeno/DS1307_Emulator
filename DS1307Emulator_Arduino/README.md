@@ -1,5 +1,7 @@
 ##DS1307 Emulator library V1.21 - Arduino Version - DS1307 emulation
 
+Apply the licence on the headers of the source files.
+
 ### This library is tested on Arduino Uno and any Arduino version which uses the Atmega328P with 16MHz crystal oscillator.
 
 It is directly forked from the ![RTC Emulator combo-lib](https://github.com/thexeno/DS1307_Emulator/tree/master/DS1307emulator_combo/combo-lib). The versions are usually aligned.
