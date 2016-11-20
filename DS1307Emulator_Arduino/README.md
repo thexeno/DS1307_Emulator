@@ -24,12 +24,13 @@ Follows an example on using it.
 
 Inizialize the emulator calling in the **void setup()** the:
 
- DS1307Emulator.init(pin);
+- **DS1307Emulator.init(pin);**
 
 Then the RTC is up and running. Any configuration shall be issued as required from the original DS1307 chip.
 Then you can read/write data anywhere in the sketch by following the functions described here below.
 
 **Master controlled**
+
 When connected to a I2C bus, the master shall read and write by following the instructions from the [original Maxim device](https://www.maximintegrated.com/en/products/digital/real-time-clocks/DS1307.html).
 
 
